@@ -277,6 +277,9 @@ RegisterNetEvent('weapons:client:DrawWeapon', function()
     robKeyLoop()
 end)
 
+RegisterNetEvent('qb-vehiclekeys:client:UpdateLastPicked', function(entity) -- r14-evidence
+    lastPickedVehicle = entity
+end) 
 
 RegisterNetEvent('lockpicks:UseLockpick', function(isAdvanced)
     LockpickDoor(isAdvanced)
@@ -600,8 +603,52 @@ function LockpickDoor(isAdvanced)
     usingAdvanced = isAdvanced
     Config.LockPickDoorEvent()
 end
-function LockpickFinishCallback(success)
+
+-- function LockpickFinishCallback(success)
+--     local vehicle = QBCore.Functions.GetClosestVehicle()
+
+--     local chance = math.random()
+--     if success then
+--         TriggerServerEvent('hud:server:GainStress', math.random(1, 4))
+--         lastPickedVehicle = vehicle
+
+--         if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+--             TriggerServerEvent('qb-vehiclekeys:server:AcquireVehicleKeys', QBCore.Functions.GetPlate(vehicle))
+--         else
+--             QBCore.Functions.Notify(Lang:t("notify.vlockpick"), 'success')
+--             TriggerServerEvent('qb-vehiclekeys:server:setVehLockState', NetworkGetNetworkIdFromEntity(vehicle), 1)
+--         end
+
+--     else
+--         TriggerServerEvent('hud:server:GainStress', math.random(1, 4))
+--         AttemptPoliceAlert("steal")
+--     end
+
+--     if usingAdvanced then
+--         if chance <= Config.RemoveLockpickAdvanced then
+--             TriggerServerEvent("qb-vehiclekeys:server:breakLockpick", "advancedlockpick")
+--         end
+--     else
+--         if chance <= Config.RemoveLockpickNormal then
+--             TriggerServerEvent("qb-vehiclekeys:server:breakLockpick", "lockpick")
+--         end
+--     end
+-- end
+
+function LockpickFinishCallback(success) -- r14-evidence
     local vehicle = QBCore.Functions.GetClosestVehicle()
+
+    if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+        TriggerServerEvent('evidence:server:SetIgnitionTamper', true, QBCore.Functions.GetPlate(vehicle))
+        if QBCore.Functions.IsWearingGloves and not QBCore.Functions.IsWearingGloves() then
+            TriggerServerEvent('evidence:server:CreateCarFingerprint', QBCore.Functions.GetPlate(vehicle), "Vehicle Ignition")
+        end
+    else
+        if QBCore.Functions.IsWearingGloves and not QBCore.Functions.IsWearingGloves() then
+            TriggerServerEvent('evidence:server:CreateCarFingerprint', QBCore.Functions.GetPlate(vehicle), "Exterior Locks")
+        end
+        TriggerServerEvent('evidence:server:SetExteriorTamper', true, QBCore.Functions.GetPlate(vehicle))
+    end
 
     local chance = math.random()
     if success then
